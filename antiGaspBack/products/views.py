@@ -9,11 +9,11 @@ from datetime import timedelta
 from .models import Product
 from .serializer import ProductSerializer, CreateProductSerializer
 from .filters import ProductFilter
-
+from users.models import User
 # Create your views here.
 class ProductListView(generics.ListAPIView):
     serializer_class = ProductSerializer
-    filter_backend = [DjangoFilterBackend],
+    filter_backends = [DjangoFilterBackend]
     filterset_class = ProductFilter
     
     def get_queryset(self):
@@ -22,15 +22,18 @@ class ProductListView(generics.ListAPIView):
         id_product__in=[p.id_product for p in queryset if p.is_visible()]
     )
 class ProductCreateView(APIView):
-    permission_classes = [IsAuthenticated]
     def post(self, request):
+        user = User.objects.get(pk="32ef462e-30fc-4f11-b436-882516ffdfd1")
+        request.user = user
+        print(request.FILES)
         serializer = CreateProductSerializer(
             data=request.data,
-            context={'request':request}
+            context={'request': request}
         )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class ProductDetailView(APIView):

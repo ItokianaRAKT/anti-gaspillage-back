@@ -36,6 +36,11 @@ class Product(models.Model):
         'users.User',
         on_delete=models.CASCADE
     )
+    image_product=models.ImageField(
+        upload_to='product/',
+        blank=True,
+        null=True
+    )
     def is_expired(self):
         return self.expiration_date < timezone.localdate()
 

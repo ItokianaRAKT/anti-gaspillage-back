@@ -26,7 +26,8 @@ class ProductSerializer(serializers.ModelSerializer):
             'user',
             'is_expired',
             'is_visible',
-            'is_available'
+            'is_available',
+            'image_product',
         ]
         read_only_fields = [
             'publication_date',
@@ -40,19 +41,20 @@ class ProductSerializer(serializers.ModelSerializer):
         return obj.is_visible()
 
 class CreateProductSerializer(serializers.ModelSerializer):
+    description_product=serializers.CharField(required=False, allow_blank=True, default="")
     class Meta:
         model = Product
         fields = [
-            'id_product'
+            'id_product',
             'name_product',
             'description_product',
             'price_product',
             'initial_stock',
-            'current_stock',
             'expiration_date',
             'recovery_address',
             'recovery_time_limit',
-            'category'
+            'category',
+            'image_product',
         ]
 
     def create(self, validated_data):
