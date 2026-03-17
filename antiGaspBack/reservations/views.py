@@ -13,7 +13,7 @@ class ReservationCreateView(APIView):
     def post(self, request):
         serializer = ReservationSerializer(data=request.data)
         if serializer.is_valid():
-            user = User.objects.get(pk="32ef462e-30fc-4f11-b436-882516ffdfd1")
+            user = User.objects.get(pk="02609020-9dbf-4212-bfde-46b7600814ef")
             serializer.save(user=user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 

@@ -17,13 +17,14 @@ class ProductListView(generics.ListAPIView):
     filterset_class = ProductFilter
     
     def get_queryset(self):
-        queryset = Product.objects.filter(is_available=True)
+        queryset = Product.objects.filter(is_available=True, current_stock__gt=0)
         return queryset.filter(
         id_product__in=[p.id_product for p in queryset if p.is_visible()]
     )
+    
 class ProductCreateView(APIView):
     def post(self, request):
-        user = User.objects.get(pk="32ef462e-30fc-4f11-b436-882516ffdfd1")
+        user = User.objects.get(pk="02609020-9dbf-4212-bfde-46b7600814ef")
         request.user = user
         print(request.FILES)
         serializer = CreateProductSerializer(
