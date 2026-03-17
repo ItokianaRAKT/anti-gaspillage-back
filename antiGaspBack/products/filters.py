@@ -3,9 +3,13 @@ from django.utils import timezone
 from datetime import timedelta
 from .models import Product
 
+
+
+
 class ProductFilter(django_filters.FilterSet):
     category = django_filters.UUIDFilter(field_name='category__id_category')
     dlc_24h = django_filters.BooleanFilter(method='filter_dlc_24h')
+    search = django_filters.CharFilter(field_name='name_product', lookup_expr='icontains')
 
     def filter_dlc_24h(self, queryset, name, value):
         if value:
@@ -15,4 +19,4 @@ class ProductFilter(django_filters.FilterSet):
     
     class Meta: 
         model = Product
-        fields = ['category']
+        fields = ['category', 'search'] 
