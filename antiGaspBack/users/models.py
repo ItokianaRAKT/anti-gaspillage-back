@@ -22,7 +22,7 @@ class User(AbstractUser):
         null=True,
         validators=[phone_validator])
     address_user=models.CharField(max_length=50)
-    # chemin à modifier après (je sais pas c'est où)
+    
     profile_pic_user=models.ImageField(
         blank=True,
         null=True,

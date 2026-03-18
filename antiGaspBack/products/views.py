@@ -7,7 +7,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from datetime import timedelta
 from .models import Product
-from .serializer import ProductSerializer, CreateProductSerializer
+from .serializers import ProductSerializer, CreateProductSerializer
 from .filters import ProductFilter
 from users.models import User
 # Create your views here.
@@ -15,7 +15,7 @@ class ProductListView(generics.ListAPIView):
     serializer_class = ProductSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = ProductFilter
-    
+
     def get_queryset(self):
         queryset = Product.objects.filter(is_available=True, current_stock__gt=0)
         return queryset.filter(
