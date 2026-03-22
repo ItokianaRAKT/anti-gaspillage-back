@@ -1,0 +1,880 @@
+openapi: "3.0.3"
+info:
+  title: Anti-Gaspillage API
+  description: API backend pour le projet anti-gaspillage alimentaire.
+  version: "1.0.0"
+servers:
+  - url: http://localhost:8000/api
+    description: Développement local
+security:
+  - BearerAuth: []
+
+tags:
+  - name: auth
+    description: Authentification et gestion de compte
+  - name: users
+    description: Profils publics et statistiques
+  - name: products
+    description: Gestion des produits
+  - name: reservations
+    description: Gestion des réservations
+  - name: reviews
+    description: Gestion des avis
+  - name: categories
+    description: Catégories de produits
+
+paths:
+
+  # ─── AUTH ───────────────────────────────────────────────────────────────────
+
+  /auth/register/:
+    post:
+      tags: [auth]
+      security: []
+      summary: Créer un compte utilisateur
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Compte créé, tokens retournés
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisterResult"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /auth/login/:
+    post:
+      tags: [auth]
+      security: []
+      summary: Connexion
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credentials"
+      responses:
+        "200":
+          description: Tokens JWT retournés
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "401":
+          description: Identifiants invalides
+
+  /auth/refresh/:
+    post:
+      tags: [auth]
+      security: []
+      summary: Renouveler l'access token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh:
+                  type: string
+              required: [refresh]
+      responses:
+        "200":
+          description: Nouveau access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+        "401":
+          description: Refresh token invalide ou expiré
+
+  /auth/logout/:
+    post:
+      tags: [auth]
+      summary: Déconnexion (blacklist le refresh token)
+      operationId: logout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh:
+                  type: string
+              required: [refresh]
+      responses:
+        "200":
+          description: Déconnexion réussie
+        "400":
+          description: Token manquant ou invalide
+
+  /auth/me/:
+    get:
+      tags: [auth]
+      summary: Voir son profil
+      operationId: getMe
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+          description: Profil de l'utilisateur connecté
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    patch:
+      tags: [auth]
+      summary: Modifier son profil
+      operationId: updateMe
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UserProfileUpdate"
+      responses:
+        "200":
+          description: Profil mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /auth/change-password/:
+    post:
+      tags: [auth]
+      summary: Changer de mot de passe
+      operationId: changePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordInput"
+      responses:
+        "200":
+          description: Mot de passe modifié
+        "400":
+          description: Ancien mot de passe incorrect ou mots de passe non correspondants
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ─── USERS ──────────────────────────────────────────────────────────────────
+
+  /users/{userId}/profile/:
+    get:
+      tags: [users]
+      security: []
+      summary: Profil public d'un utilisateur
+      operationId: getUserProfile
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: Profil public
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPublic"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /users/{userId}/stats/:
+    get:
+      tags: [users]
+      security: []
+      summary: Statistiques d'un utilisateur
+      operationId: getUserStats
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: Statistiques
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserStats"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ─── PRODUCTS ───────────────────────────────────────────────────────────────
+
+  /products/:
+    get:
+      tags: [products]
+      security: []
+      summary: Liste des produits disponibles
+      operationId: listProducts
+      parameters:
+        - name: search
+          in: query
+          description: Recherche par nom
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: Filtrer par UUID de catégorie
+          schema:
+            type: string
+            format: uuid
+        - name: dlc_24h
+          in: query
+          description: Produits expirant dans les 24h
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Liste de produits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /products/create/:
+    post:
+      tags: [products]
+      summary: Créer un produit
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Produit créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /products/{productId}/:
+    get:
+      tags: [products]
+      security: []
+      summary: Détail d'un produit
+      operationId: getProduct
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      responses:
+        "200":
+          description: Détail du produit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [products]
+      summary: Modifier un produit (propriétaire uniquement)
+      operationId: updateProduct
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "200":
+          description: Produit mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [products]
+      summary: Supprimer un produit (propriétaire uniquement)
+      operationId: deleteProduct
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      responses:
+        "204":
+          description: Produit supprimé
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /products/{productId}/relist/:
+    post:
+      tags: [products]
+      summary: Remettre un produit en vente (propriétaire uniquement)
+      operationId: relistProduct
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      responses:
+        "200":
+          description: Produit remis en vente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /products/{productId}/reviews/:
+    get:
+      tags: [reviews]
+      security: []
+      summary: Avis d'un produit
+      operationId: getProductReviews
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      responses:
+        "200":
+          description: Liste des avis
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+
+  # ─── RESERVATIONS ───────────────────────────────────────────────────────────
+
+  /reservations/:
+    post:
+      tags: [reservations]
+      summary: Créer une réservation
+      operationId: createReservation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReservationInput"
+      responses:
+        "201":
+          description: Réservation créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /reservations/my/:
+    get:
+      tags: [reservations]
+      summary: Mes réservations
+      operationId: myReservations
+      responses:
+        "200":
+          description: Liste des réservations de l'utilisateur connecté
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Reservation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /reservations/{reservationId}/collect/:
+    post:
+      tags: [reservations]
+      summary: Marquer une réservation comme récupérée
+      operationId: collectReservation
+      parameters:
+        - $ref: "#/components/parameters/ReservationId"
+      responses:
+        "200":
+          description: Statut mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "400":
+          description: Statut incompatible
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /reservations/{reservationId}/not-collected/:
+    post:
+      tags: [reservations]
+      summary: Marquer une réservation comme non récupérée
+      operationId: notCollectedReservation
+      parameters:
+        - $ref: "#/components/parameters/ReservationId"
+      responses:
+        "200":
+          description: Réservation annulée, stock remis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "400":
+          description: Statut incompatible
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ─── REVIEWS ────────────────────────────────────────────────────────────────
+
+  /reviews/:
+    post:
+      tags: [reviews]
+      summary: Laisser un avis
+      operationId: createReview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewInput"
+      responses:
+        "201":
+          description: Avis ajouté
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ─── CATEGORIES ─────────────────────────────────────────────────────────────
+
+  /categories/:
+    get:
+      tags: [categories]
+      security: []
+      summary: Liste des catégories
+      operationId: listCategories
+      responses:
+        "200":
+          description: Liste des catégories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+components:
+
+  # ─── PARAMETERS ─────────────────────────────────────────────────────────────
+
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ProductId:
+      name: productId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ReservationId:
+      name: reservationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  # ─── RESPONSES ──────────────────────────────────────────────────────────────
+
+  responses:
+    Unauthorized:
+      description: Non authentifié
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: "Authentication credentials were not provided."
+    Forbidden:
+      description: Action non autorisée
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Action non autorisée"
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: "Not found."
+    ValidationError:
+      description: Erreur de validation
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties:
+              type: array
+              items:
+                type: string
+
+  # ─── SCHEMAS ────────────────────────────────────────────────────────────────
+
+  schemas:
+
+    Credentials:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    TokenPair:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+
+    RegisterInput:
+      type: object
+      required: [username, email, password, password2]
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        password2:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        tel1_user:
+          type: string
+          example: "+261340000000"
+          nullable: true
+        tel2_user:
+          type: string
+          nullable: true
+        address_user:
+          type: string
+          nullable: true
+        profile_pic_user:
+          type: string
+          format: binary
+          nullable: true
+
+    RegisterResult:
+      type: object
+      properties:
+        message:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserProfile"
+        tokens:
+          $ref: "#/components/schemas/TokenPair"
+
+    UserProfile:
+      type: object
+      properties:
+        id_user:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        tel1_user:
+          type: string
+          nullable: true
+        tel2_user:
+          type: string
+          nullable: true
+        address_user:
+          type: string
+          nullable: true
+        profile_pic_user:
+          type: string
+          nullable: true
+        saved_in_90_days:
+          type: integer
+          readOnly: true
+        total_product_saved:
+          type: integer
+          readOnly: true
+
+    UserProfileUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        tel1_user:
+          type: string
+          nullable: true
+        tel2_user:
+          type: string
+          nullable: true
+        address_user:
+          type: string
+          nullable: true
+        profile_pic_user:
+          type: string
+          format: binary
+          nullable: true
+
+    UserPublic:
+      type: object
+      properties:
+        id_user:
+          type: string
+          format: uuid
+        username:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        profile_pic_user:
+          type: string
+          nullable: true
+        saved_in_90_days:
+          type: integer
+        total_product_saved:
+          type: integer
+
+    UserStats:
+      type: object
+      properties:
+        total_product_saved:
+          type: integer
+        saved_in_90_days:
+          type: integer
+
+    ChangePasswordInput:
+      type: object
+      required: [old_password, new_password, new_password2]
+      properties:
+        old_password:
+          type: string
+        new_password:
+          type: string
+        new_password2:
+          type: string
+
+    ProductInput:
+      type: object
+      required: [name_product, description_product, price_product, initial_stock, expiration_date, recovery_address, recovery_time_limit, category]
+      properties:
+        name_product:
+          type: string
+        description_product:
+          type: string
+        price_product:
+          type: number
+          format: decimal
+        initial_stock:
+          type: integer
+          minimum: 1
+        expiration_date:
+          type: string
+          format: date
+        recovery_address:
+          type: string
+        recovery_time_limit:
+          type: string
+          format: date-time
+        is_available:
+          type: boolean
+          default: true
+        category:
+          type: string
+          format: uuid
+        image_product:
+          type: string
+          format: binary
+          nullable: true
+
+    Product:
+      allOf:
+        - $ref: "#/components/schemas/ProductInput"
+      properties:
+        id_product:
+          type: string
+          format: uuid
+          readOnly: true
+        current_stock:
+          type: integer
+          readOnly: true
+        publication_date:
+          type: string
+          format: date-time
+          readOnly: true
+        is_expired:
+          type: boolean
+          readOnly: true
+        category_name:
+          type: string
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        user_username:
+          type: string
+          readOnly: true
+
+    ReservationInput:
+      type: object
+      required: [product, quantity_reserved, estimated_recovery_time]
+      properties:
+        product:
+          type: string
+          format: uuid
+        quantity_reserved:
+          type: integer
+          minimum: 1
+        estimated_recovery_time:
+          type: string
+          format: date-time
+
+    Reservation:
+      allOf:
+        - $ref: "#/components/schemas/ReservationInput"
+      properties:
+        id_reservation:
+          type: string
+          format: uuid
+          readOnly: true
+        date_reservation:
+          type: string
+          format: date-time
+          readOnly: true
+        status_reservation:
+          type: string
+          enum: [pending, confirmed, cancelled, collected]
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+
+    ReviewInput:
+      type: object
+      required: [product, rating_review]
+      properties:
+        product:
+          type: string
+          format: uuid
+        rating_review:
+          type: number
+          minimum: 0
+          maximum: 5
+        comment_review:
+          type: string
+          nullable: true
+          maxLength: 500
+
+    Review:
+      allOf:
+        - $ref: "#/components/schemas/ReviewInput"
+      properties:
+        id_review:
+          type: string
+          format: uuid
+          readOnly: true
+        date_review:
+          type: string
+          format: date-time
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+
+    Category:
+      type: object
+      properties:
+        id_category:
+          type: string
+          format: uuid
+          readOnly: true
+        name_category:
+          type: string
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
