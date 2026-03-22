@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'reviews',
     'badge',
     'category',
+    'stats',
     'django_filters',
 ]
 

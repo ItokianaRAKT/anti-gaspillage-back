@@ -10,6 +10,8 @@ urlpatterns = [
     path('api/reservations/', include('reservations.urls')),
     path('api/reviews/', include('reviews.urls')),
     path('api/categories/', include('category.urls')),
+    path('api/badges/', include('badge.urls')),
+    path('api/stats/', include('stats.urls')),
     path('api/users/', include('users.public_urls')),
 
     # Auth
