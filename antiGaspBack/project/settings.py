@@ -1,11 +1,15 @@
 from pathlib import Path
 from datetime import timedelta
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-rz(0#f1oa0ouh(n9=_xa)f@of_ey4s2cdn@)q6zrc19-o_m$4u'
-DEBUG = True
-ALLOWED_HOSTS = []
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-changeme')
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -15,7 +19,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'rest_framework_simplejwt.token_blacklist',  # ← requis pour logout
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'users',
     'products.apps.ProductsConfig',
@@ -25,8 +29,6 @@ INSTALLED_APPS = [
     'category',
     'django_filters',
 ]
-
-
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -62,11 +64,11 @@ WSGI_APPLICATION = 'project.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "antigaspillage",
-        "USER": "antigaspillageuser",
-        "PASSWORD": "motdepasse&correct",
-        "HOST": "localhost",
-        "PORT": "5432",
+        "NAME": os.getenv('DB_NAME'),
+        "USER": os.getenv('DB_USER'),
+        "PASSWORD": os.getenv('DB_PASSWORD'),
+        "HOST": os.getenv('DB_HOST', 'localhost'),
+        "PORT": os.getenv('DB_PORT', '5432'),
     }
 }
 
@@ -102,8 +104,8 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'USER_ID_FIELD': 'id_user',
     'USER_ID_CLAIM': 'user_id',
-    'ROTATE_REFRESH_TOKENS': True,       # ← nouveau refresh token à chaque refresh
-    'BLACKLIST_AFTER_ROTATION': True,    # ← blackliste l'ancien après rotation
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
 }
 
 MEDIA_URL = "/media/"

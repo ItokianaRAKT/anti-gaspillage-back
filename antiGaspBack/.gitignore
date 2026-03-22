@@ -307,4 +307,4 @@ pip-selfcheck.json
 .history
 .ionide
 
-# End of https://www.toptal.com/developers/gitignore/api/python,django,venv,visualstudiocode,linux
+# End of https://www.toptal.com/developers/gitignore/api/python,django,venv,visualstudiocode,linux.env

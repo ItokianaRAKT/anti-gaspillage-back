@@ -4,7 +4,7 @@ from django.core.validators import MinValueValidator
 from products.models import Product
 from django.contrib.auth import get_user_model
 User = get_user_model()
-# Create your models here.
+
 class Reservation(models.Model):
     id_reservation=models.UUIDField(
         primary_key=True, 
