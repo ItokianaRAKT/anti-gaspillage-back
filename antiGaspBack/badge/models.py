@@ -1,6 +1,6 @@
 from django.db import models
 import uuid
-# Create your models here.
+
 class Badge(models.Model):
     id_badge=models.UUIDField(
         primary_key=True, 
