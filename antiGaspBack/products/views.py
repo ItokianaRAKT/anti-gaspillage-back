@@ -7,7 +7,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from datetime import timedelta
 from .models import Product
-from .serializers import ProductSerializer, CreateProductSerializer
+from .serializer import ProductSerializer, CreateProductSerializer
 from .filters import ProductFilter
 from users.models import User
 # Create your views here.
