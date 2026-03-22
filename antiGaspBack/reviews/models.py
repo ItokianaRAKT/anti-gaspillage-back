@@ -2,7 +2,6 @@ from django.db import models
 import uuid
 from django.core.validators import MinValueValidator, MaxValueValidator
 
-# Create your models here.
 class Review(models.Model):
     id_review=models.UUIDField(
         primary_key=True, 
