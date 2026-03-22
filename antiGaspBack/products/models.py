@@ -8,7 +8,6 @@ phone_validator=RegexValidator(
     regex=r'^\+?\d{8,20}$',
     message="Numéro invalide. Format attendu: +261XXXXXXXX"
 )
-# Create your models here.
 
 class Product(models.Model):
     id_product=models.UUIDField(

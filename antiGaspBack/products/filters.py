@@ -3,9 +3,6 @@ from django.utils import timezone
 from datetime import timedelta
 from .models import Product
 
-
-
-
 class ProductFilter(django_filters.FilterSet):
     category = django_filters.UUIDFilter(field_name='category__id_category')
     dlc_24h = django_filters.BooleanFilter(method='filter_dlc_24h')
