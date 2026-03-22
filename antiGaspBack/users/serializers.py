@@ -4,9 +4,7 @@ from .models import User
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(
-        write_only=True, required=True, validators=[validate_password]
-    )
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
 
     class Meta:
@@ -17,10 +15,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             'tel1_user', 'tel2_user',
             'address_user', 'profile_pic_user',
         )
-        extra_kwargs = {
-            'email': {'required': True},
-            'address_user': {'required': False},
-        }
+        extra_kwargs = {'email': {'required': True}}
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
@@ -47,6 +42,18 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'saved_in_90_days', 'total_product_saved',
         )
         read_only_fields = ('id_user', 'username', 'saved_in_90_days', 'total_product_saved')
+
+
+class UserPublicSerializer(serializers.ModelSerializer):
+    """Serializer pour le profil public — sans infos sensibles"""
+    class Meta:
+        model = User
+        fields = (
+            'id_user', 'username',
+            'first_name', 'last_name',
+            'profile_pic_user',
+            'saved_in_90_days', 'total_product_saved',
+        )
 
 
 class ChangePasswordSerializer(serializers.Serializer):
