@@ -4,6 +4,8 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from .models import Reservation
 from .serializers import ReservationSerializer
+
+from badge.utils import assign_badges
 from users.models import User
 
 class ReservationCreateView(APIView):
@@ -12,6 +14,11 @@ class ReservationCreateView(APIView):
     Crée une réservation. Requiert authentification.
     """
     permission_classes = []
+#IsAuthenticated à ajouter
+
+
+
+
 
     def post(self, request):
 #les deux prochaines lignes à supprimer
@@ -26,23 +33,16 @@ class ReservationCreateView(APIView):
 
 
 class MyReservationsView(APIView):
-    """
-    GET /api/reservations/my/
-    Liste les réservations de l'utilisateur connecté.
-    """
+    """GET /api/reservations/my/ — Mes réservations."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         reservations = Reservation.objects.filter(user=request.user).order_by('-date_reservation')
-        serializer = ReservationSerializer(reservations, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(ReservationSerializer(reservations, many=True).data)
 
 
 class ReservationCollectView(APIView):
-    """
-    POST /api/reservations/<pk>/collect/
-    Marque une réservation comme récupérée.
-    """
+    """POST /api/reservations/<uuid>/collect/ — Marquer comme récupérée."""
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
@@ -56,30 +56,34 @@ class ReservationCollectView(APIView):
 
         if reservation.status_reservation != 'pending':
             return Response(
-                {'error': f'Impossible de collecter une réservation avec le statut "{reservation.status_reservation}"'},
+                {'error': f'Statut incompatible : "{reservation.status_reservation}"'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         reservation.status_reservation = 'collected'
         reservation.save()
 
-        # Mettre à jour les stats de l'utilisateur
+        # Mettre à jour les stats utilisateur
         user = request.user
         user.total_product_saved += reservation.quantity_reserved
         user.saved_in_90_days += reservation.quantity_reserved
         user.save()
 
-        serializer = ReservationSerializer(reservation)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # Attribuer les badges mérités
+        assign_badges(user)
+
+        return Response(ReservationSerializer(reservation).data)
 
 
 class ReservationNotCollectedView(APIView):
+
     """
     POST /api/reservations/<pk>/not-collected/
     Marque une réservation comme non récupérée et remet le stock.
     """
     permission_classes = []
 # à remettre [IsAuthenticated]
+
     def post(self, request, pk):
         try:
             reservation = Reservation.objects.get(pk=pk)
@@ -89,13 +93,15 @@ class ReservationNotCollectedView(APIView):
 #        if reservation.user != request.user:
 #            return Response({'error': 'Action non autorisée'}, status=status.HTTP_403_FORBIDDEN)
 
+
 #        if reservation.status_reservation != 'pending':
 #            return Response(
 #                {'error': f'Impossible d\'annuler une réservation avec le statut "{reservation.status_reservation}"'},
 #              status=status.HTTP_400_BAD_REQUEST
 #           )
 
-        # Remettre le stock
+
+
         product = reservation.product
         product.current_stock += reservation.quantity_reserved
         product.save()
@@ -103,5 +109,4 @@ class ReservationNotCollectedView(APIView):
         reservation.status_reservation = 'cancelled'
         reservation.save()
 
-        serializer = ReservationSerializer(reservation)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(ReservationSerializer(reservation).data)

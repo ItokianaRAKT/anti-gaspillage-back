@@ -22,6 +22,10 @@ tags:
     description: Gestion des avis
   - name: categories
     description: Catégories de produits
+  - name: badges
+    description: Badges utilisateurs
+  - name: stats
+    description: Statistiques communautaires
 
 paths:
 
@@ -83,10 +87,10 @@ paths:
           application/json:
             schema:
               type: object
+              required: [refresh]
               properties:
                 refresh:
                   type: string
-              required: [refresh]
       responses:
         "200":
           description: Nouveau access token
@@ -111,10 +115,10 @@ paths:
           application/json:
             schema:
               type: object
+              required: [refresh]
               properties:
                 refresh:
                   type: string
-              required: [refresh]
       responses:
         "200":
           description: Déconnexion réussie
@@ -128,11 +132,11 @@ paths:
       operationId: getMe
       responses:
         "200":
+          description: Profil de l'utilisateur connecté
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserProfile"
-          description: Profil de l'utilisateur connecté
         "401":
           $ref: "#/components/responses/Unauthorized"
     patch:
@@ -213,6 +217,26 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /users/{userId}/badges/:
+    get:
+      tags: [badges]
+      security: []
+      summary: Badges obtenus par un utilisateur
+      operationId: getUserBadges
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: Liste des badges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserBadge"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   # ─── PRODUCTS ───────────────────────────────────────────────────────────────
 
   /products/:
@@ -238,9 +262,32 @@ paths:
           description: Produits expirant dans les 24h
           schema:
             type: boolean
+        - name: is_free
+          in: query
+          description: Produits gratuits uniquement
+          schema:
+            type: boolean
+        - name: lat
+          in: query
+          description: Latitude du point de référence (filtre distance)
+          schema:
+            type: number
+            format: float
+        - name: lng
+          in: query
+          description: Longitude du point de référence (filtre distance)
+          schema:
+            type: number
+            format: float
+        - name: distance_km
+          in: query
+          description: Rayon de recherche en km
+          schema:
+            type: number
+            format: float
       responses:
         "200":
-          description: Liste de produits
+          description: Liste de produits (gratuits en premier, puis par date)
           content:
             application/json:
               schema:
@@ -420,7 +467,7 @@ paths:
         - $ref: "#/components/parameters/ReservationId"
       responses:
         "200":
-          description: Statut mis à jour
+          description: Statut mis à jour, badges attribués si seuil atteint
           content:
             application/json:
               schema:
@@ -499,6 +546,22 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Category"
+
+  # ─── STATS ──────────────────────────────────────────────────────────────────
+
+  /stats/:
+    get:
+      tags: [stats]
+      security: []
+      summary: Statistiques globales de la communauté
+      operationId: getCommunityStats
+      responses:
+        "200":
+          description: Stats communautaires
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityStats"
 
 components:
 
@@ -733,6 +796,41 @@ components:
         new_password2:
           type: string
 
+    Badge:
+      type: object
+      properties:
+        id_badge:
+          type: string
+          format: uuid
+          readOnly: true
+        name_badge:
+          type: string
+        badge_type:
+          type: string
+          enum: [bronze, silver, gold]
+        picture_badge:
+          type: string
+          nullable: true
+        obtaining_alone_badge:
+          type: integer
+          description: Nombre de produits sauvés requis
+
+    UserBadge:
+      type: object
+      properties:
+        badge:
+          $ref: "#/components/schemas/Badge"
+
+    CommunityStats:
+      type: object
+      properties:
+        total_saved:
+          type: integer
+          description: Total de produits sauvés depuis le début
+        saved_last_90_days:
+          type: integer
+          description: Produits sauvés sur les 90 derniers jours
+
     ProductInput:
       type: object
       required: [name_product, description_product, price_product, initial_stock, expiration_date, recovery_address, recovery_time_limit, category]
@@ -744,6 +842,8 @@ components:
         price_product:
           type: number
           format: decimal
+          minimum: 0
+          description: 0 pour un produit gratuit, max 50000 Ar
         initial_stock:
           type: integer
           minimum: 1
@@ -765,6 +865,16 @@ components:
           type: string
           format: binary
           nullable: true
+        latitude:
+          type: number
+          format: float
+          nullable: true
+          description: Coordonnée GPS latitude
+        longitude:
+          type: number
+          format: float
+          nullable: true
+          description: Coordonnée GPS longitude
 
     Product:
       allOf:
@@ -782,6 +892,9 @@ components:
           format: date-time
           readOnly: true
         is_expired:
+          type: boolean
+          readOnly: true
+        is_free:
           type: boolean
           readOnly: true
         category_name:

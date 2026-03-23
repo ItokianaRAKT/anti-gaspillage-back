@@ -12,7 +12,9 @@ from users.models import User
 class ProductListView(generics.ListAPIView):
     """
     GET /api/products/
-    Liste tous les produits disponibles et non expirés. Public.
+    Liste tous les produits disponibles et non expirés.
+    Tri : gratuits en premier, puis par date de publication décroissante.
+    Filtres : search, category, dlc_24h, is_free, lat+lng+distance_km
     """
     serializer_class = ProductSerializer
     permission_classes = [AllowAny]
@@ -21,12 +23,15 @@ class ProductListView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = Product.objects.filter(is_available=True, current_stock__gt=0)
-        return queryset.filter(
+        queryset = queryset.filter(
             id_product__in=[p.id_product for p in queryset if p.is_visible()]
         )
+        # Priorité : gratuits en premier, puis plus récents
+        return queryset.order_by('price_product', '-publication_date')
 
 
 class ProductCreateView(APIView):
+
     """
     POST /api/products/create/
     Crée un produit. Requiert authentification.
@@ -53,9 +58,9 @@ class ProductCreateView(APIView):
         
 class ProductDetailView(APIView):
     """
-    GET    /api/products/<uuid:pk>/ → détail produit, public
-    PATCH  /api/products/<uuid:pk>/ → modifier, réservé au propriétaire
-    DELETE /api/products/<uuid:pk>/ → supprimer, réservé au propriétaire
+    GET    /api/products/<uuid>/ — public
+    PATCH  /api/products/<uuid>/ — propriétaire uniquement
+    DELETE /api/products/<uuid>/ — propriétaire uniquement
     """
     def get_permissions(self):
         if self.request.method == 'GET':
@@ -64,8 +69,7 @@ class ProductDetailView(APIView):
 
     def get(self, request, pk):
         product = get_object_or_404(Product, pk=pk)
-        serializer = ProductSerializer(product)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(ProductSerializer(product).data)
 
     def patch(self, request, pk):
         product = get_object_or_404(Product, pk=pk)
@@ -77,7 +81,7 @@ class ProductDetailView(APIView):
         )
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
@@ -89,10 +93,7 @@ class ProductDetailView(APIView):
 
 
 class ProductRelistView(APIView):
-    """
-    POST /api/products/<uuid:pk>/relist/
-    Remet un produit en vente après non-récupération. Réservé au propriétaire.
-    """
+    """POST /api/products/<uuid>/relist/ — Remettre en vente."""
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
@@ -101,5 +102,4 @@ class ProductRelistView(APIView):
             return Response({'error': 'Action non autorisée'}, status=status.HTTP_403_FORBIDDEN)
         product.is_available = True
         product.save()
-        serializer = ProductSerializer(product)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(ProductSerializer(product).data)
