@@ -16,7 +16,7 @@ class Product(models.Model):
         editable=False
     )
     name_product=models.CharField(max_length=200)
-    description_product=models.TextField()
+    description_product=models.TextField(blank=True, default="")
     price_product=models.DecimalField(
         max_digits=10, 
         decimal_places=2

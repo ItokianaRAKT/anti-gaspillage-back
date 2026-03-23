@@ -32,6 +32,8 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class CreateProductSerializer(serializers.ModelSerializer):
+    class CreateProductSerializer(serializers.ModelSerializer):
+        description_product = serializers.CharField(required=False, allow_blank=True, default="")
     class Meta:
         model = Product
         fields = (

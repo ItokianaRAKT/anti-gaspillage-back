@@ -5,9 +5,9 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Product
-from .serializer import ProductSerializer, CreateProductSerializer
+from .serializers import ProductSerializer, CreateProductSerializer
 from .filters import ProductFilter
-
+from users.models import User
 
 class ProductListView(generics.ListAPIView):
     """
@@ -31,19 +31,26 @@ class ProductCreateView(APIView):
     POST /api/products/create/
     Crée un produit. Requiert authentification.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def post(self, request):
+        from users.models import User
+        user = User.objects.first()  # prend le premier user dispo, à supprimer après
+        request.user = user          # à supprimer aussi
+        # from users.models import User          # à décommenter
+        # user = User.objects.first()            
+        # request.user = user                   
         serializer = CreateProductSerializer(
             data=request.data,
             context={'request': request}
-        )
+    )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+        
 class ProductDetailView(APIView):
     """
     GET    /api/products/<uuid:pk>/ → détail produit, public
