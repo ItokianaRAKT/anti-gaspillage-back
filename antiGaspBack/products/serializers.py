@@ -1,6 +1,12 @@
 from rest_framework import serializers
-from .models import Product, PriceHistory, PRICE_CAP
+from .models import Product, PriceHistory
 
+PRICE_CAPS = {
+    'pains et patisseries': 5000,
+    'fruits et légumes': 8000,
+    'plats faits maison': 15000,
+    'invendus de commerçe': 20000,
+}
 
 class PriceHistorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -37,8 +43,8 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class CreateProductSerializer(serializers.ModelSerializer):
-    class CreateProductSerializer(serializers.ModelSerializer):
-        description_product = serializers.CharField(required=False, allow_blank=True, default="")
+    description_product = serializers.CharField(required=False, allow_blank=True, default="")
+
     class Meta:
         model = Product
         fields = (
@@ -49,14 +55,24 @@ class CreateProductSerializer(serializers.ModelSerializer):
             'latitude', 'longitude',
         )
 
-    def validate_price_product(self, value):
-        if value > PRICE_CAP:
-            raise serializers.ValidationError(
-                f"Le prix ne peut pas dépasser {PRICE_CAP} Ar."
-            )
-        if value < 0:
-            raise serializers.ValidationError("Le prix ne peut pas être négatif.")
-        return value
+    def validate(self, data):
+        category = data.get('category')
+        price = data.get('price_product', 0)
+
+        if category:
+            cat_name = category.name_category.lower()
+            plafond = PRICE_CAPS.get(cat_name)
+            if plafond and price > plafond:
+                raise serializers.ValidationError({
+                    'price_product': f'Prix trop élevé. Plafond pour cette catégorie : {plafond} Ar'
+                })
+        
+        if price < 0:
+            raise serializers.ValidationError({
+                'price_product': 'Le prix ne peut pas être négatif.'
+            })
+
+        return data
 
     def create(self, validated_data):
         user = self.context['request'].user

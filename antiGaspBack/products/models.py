@@ -46,6 +46,14 @@ class Product(models.Model):
         null=True,
         blank=True
     )
+    
+    #Plafond de prix par catégories
+    PRICE_CAPS = {
+    'Pains et patisseries': 5000,
+    'Fruits et légumes': 8000,
+    'Plats faits maison': 15000,
+    'Invendus de commerçe': 20000,
+    }
 
     category = models.ForeignKey(
         'category.Category',
