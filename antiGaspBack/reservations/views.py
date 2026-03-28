@@ -13,17 +13,14 @@ class ReservationCreateView(APIView):
     POST /api/reservations/
     Crée une réservation. Requiert authentification.
     """
-    permission_classes = []
-#IsAuthenticated à ajouter
+    permission_classes = [IsAuthenticated]
 
 
 
 
 
     def post(self, request):
-#les deux prochaines lignes à supprimer
-        user = User.objects.first()
-        request.user = user
+
         serializer = ReservationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)
@@ -81,8 +78,8 @@ class ReservationNotCollectedView(APIView):
     POST /api/reservations/<pk>/not-collected/
     Marque une réservation comme non récupérée et remet le stock.
     """
-    permission_classes = []
-# à remettre [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
+
 
     def post(self, request, pk):
         try:
@@ -90,15 +87,15 @@ class ReservationNotCollectedView(APIView):
         except Reservation.DoesNotExist:
             return Response({'error': 'Réservation introuvable'}, status=status.HTTP_404_NOT_FOUND)
 
-#        if reservation.user != request.user:
-#            return Response({'error': 'Action non autorisée'}, status=status.HTTP_403_FORBIDDEN)
+        if reservation.user != request.user:
+            return Response({'error': 'Action non autorisée'}, status=status.HTTP_403_FORBIDDEN)
 
 
-#        if reservation.status_reservation != 'pending':
-#            return Response(
-#                {'error': f'Impossible d\'annuler une réservation avec le statut "{reservation.status_reservation}"'},
-#              status=status.HTTP_400_BAD_REQUEST
-#           )
+        if reservation.status_reservation != 'pending':
+            return Response(
+                {'error': f'Impossible d\'annuler une réservation avec le statut "{reservation.status_reservation}"'},
+              status=status.HTTP_400_BAD_REQUEST
+           )
 
 
 

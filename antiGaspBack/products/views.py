@@ -40,11 +40,9 @@ class ProductCreateView(APIView):
 
     def post(self, request):
         from users.models import User
-        user = User.objects.first()  # prend le premier user dispo, à supprimer après
-        request.user = user          # à supprimer aussi
-        # from users.models import User          # à décommenter
-        # user = User.objects.first()            
-        # request.user = user                   
+        from users.models import User          
+        user = User.objects.first()            
+        request.user = user                   
         serializer = CreateProductSerializer(
             data=request.data,
             context={'request': request}

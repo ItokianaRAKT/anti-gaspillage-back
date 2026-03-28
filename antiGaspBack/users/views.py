@@ -13,6 +13,7 @@ from .serializers import (
 )
 
 
+
 class RegisterView(generics.CreateAPIView):
     """POST /api/auth/register/ — Créer un compte"""
     queryset = User.objects.all()
@@ -20,8 +21,11 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
 
     def create(self, request, *args, **kwargs):
+        print("DATA REÇUE:", request.data)
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            print("ERREURS:", serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         user = serializer.save()
         refresh = RefreshToken.for_user(user)
         return Response({
@@ -30,8 +34,8 @@ class RegisterView(generics.CreateAPIView):
             "tokens": {
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
-            }
-        }, status=status.HTTP_201_CREATED)
+        }
+    }, status=status.HTTP_201_CREATED)
 
 
 class LogoutView(APIView):
