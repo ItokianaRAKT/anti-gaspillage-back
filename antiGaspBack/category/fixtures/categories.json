@@ -1,0 +1,52 @@
+[
+  {
+    "model": "category.category",
+    "pk": "b57d32d0-d224-4253-9bed-6dc647c89d9d",
+    "fields": { "name_category": "Fruits & Légumes" }
+  },
+  {
+    "model": "category.category",
+    "pk": "3aec946b-1710-4180-928a-5a6c6cd4d59d",
+    "fields": { "name_category": "Boulangerie" }
+  },
+  {
+    "model": "category.category",
+    "pk": "397f5610-7eac-470a-a162-b1b765ac9c4c",
+    "fields": { "name_category": "Produits laitiers" }
+  },
+  {
+    "model": "category.category",
+    "pk": "02b9e2fe-a8cc-4939-9871-566dd1ac4282",
+    "fields": { "name_category": "Viandes" }
+  },
+  {
+    "model": "category.category",
+    "pk": "c0cd1bff-13ad-498d-8323-418dd79c860a",
+    "fields": { "name_category": "Poissons" }
+  },
+  {
+    "model": "category.category",
+    "pk": "31356d18-8231-48e7-8513-c0d1d4c99e7d",
+    "fields": { "name_category": "Épicerie" }
+  },
+  {
+    "model": "category.category",
+    "pk": "d5840f1a-a73e-4707-9eb3-af6e60420ca8",
+    "fields": { "name_category": "Boissons" }
+  },
+  {
+    "model": "category.category",
+    "pk": "60a65e91-878c-43d1-8b66-fc8e6f2c0b39",
+    "fields": { "name_category": "Plats cuisinés" }
+  },
+  {
+    "model": "category.category",
+    "pk": "76bd1c6c-7686-46d4-8593-15145664e389",
+    "fields": { "name_category": "Desserts" }
+  },
+  {
+    "model": "category.category",
+    "pk": "d8d5f1e1-561b-46ad-a6e8-899a6dc2cf5e",
+    "fields": { "name_category": "Autres" }
+  }
+]

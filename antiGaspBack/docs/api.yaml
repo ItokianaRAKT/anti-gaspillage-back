@@ -29,8 +29,6 @@ tags:
 
 paths:
 
-  # ─── AUTH ───────────────────────────────────────────────────────────────────
-
   /auth/register/:
     post:
       tags: [auth]
@@ -175,11 +173,9 @@ paths:
         "200":
           description: Mot de passe modifié
         "400":
-          description: Ancien mot de passe incorrect ou mots de passe non correspondants
+          description: Ancien mot de passe incorrect
         "401":
           $ref: "#/components/responses/Unauthorized"
-
-  # ─── USERS ──────────────────────────────────────────────────────────────────
 
   /users/{userId}/profile/:
     get:
@@ -237,8 +233,6 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  # ─── PRODUCTS ───────────────────────────────────────────────────────────────
-
   /products/:
     get:
       tags: [products]
@@ -248,43 +242,33 @@ paths:
       parameters:
         - name: search
           in: query
-          description: Recherche par nom
           schema:
             type: string
         - name: category
           in: query
-          description: Filtrer par UUID de catégorie
           schema:
             type: string
             format: uuid
         - name: dlc_24h
           in: query
-          description: Produits expirant dans les 24h
           schema:
             type: boolean
         - name: is_free
           in: query
-          description: Produits gratuits uniquement
           schema:
             type: boolean
         - name: lat
           in: query
-          description: Latitude du point de référence (filtre distance)
           schema:
             type: number
-            format: float
         - name: lng
           in: query
-          description: Longitude du point de référence (filtre distance)
           schema:
             type: number
-            format: float
         - name: distance_km
           in: query
-          description: Rayon de recherche en km
           schema:
             type: number
-            format: float
       responses:
         "200":
           description: Liste de produits (gratuits en premier, puis par date)
@@ -294,6 +278,23 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Product"
+
+  /products/my/:
+    get:
+      tags: [products]
+      summary: Mes produits publiés avec leurs réservations
+      operationId: myProducts
+      responses:
+        "200":
+          description: Liste des produits de l'utilisateur connecté avec réservations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductWithReservations"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /products/create/:
     post:
@@ -328,7 +329,7 @@ paths:
         - $ref: "#/components/parameters/ProductId"
       responses:
         "200":
-          description: Détail du produit
+          description: OK
           content:
             application/json:
               schema:
@@ -353,8 +354,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Product"
-        "400":
-          $ref: "#/components/responses/ValidationError"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -395,8 +394,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
 
   /products/{productId}/reviews/:
     get:
@@ -415,8 +412,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Review"
-
-  # ─── RESERVATIONS ───────────────────────────────────────────────────────────
 
   /reservations/:
     post:
@@ -504,8 +499,6 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  # ─── REVIEWS ────────────────────────────────────────────────────────────────
-
   /reviews/:
     post:
       tags: [reviews]
@@ -529,8 +522,6 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
-  # ─── CATEGORIES ─────────────────────────────────────────────────────────────
-
   /categories/:
     get:
       tags: [categories]
@@ -539,15 +530,13 @@ paths:
       operationId: listCategories
       responses:
         "200":
-          description: Liste des catégories
+          description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/Category"
-
-  # ─── STATS ──────────────────────────────────────────────────────────────────
 
   /stats/:
     get:
@@ -564,8 +553,6 @@ paths:
                 $ref: "#/components/schemas/CommunityStats"
 
 components:
-
-  # ─── PARAMETERS ─────────────────────────────────────────────────────────────
 
   parameters:
     UserId:
@@ -590,8 +577,6 @@ components:
         type: string
         format: uuid
 
-  # ─── RESPONSES ──────────────────────────────────────────────────────────────
-
   responses:
     Unauthorized:
       description: Non authentifié
@@ -602,7 +587,6 @@ components:
             properties:
               detail:
                 type: string
-                example: "Authentication credentials were not provided."
     Forbidden:
       description: Action non autorisée
       content:
@@ -612,7 +596,6 @@ components:
             properties:
               error:
                 type: string
-                example: "Action non autorisée"
     NotFound:
       description: Ressource introuvable
       content:
@@ -622,7 +605,6 @@ components:
             properties:
               detail:
                 type: string
-                example: "Not found."
     ValidationError:
       description: Erreur de validation
       content:
@@ -633,8 +615,6 @@ components:
               type: array
               items:
                 type: string
-
-  # ─── SCHEMAS ────────────────────────────────────────────────────────────────
 
   schemas:
 
@@ -674,7 +654,6 @@ components:
           type: string
         tel1_user:
           type: string
-          example: "+261340000000"
           nullable: true
         tel2_user:
           type: string
@@ -802,7 +781,6 @@ components:
         id_badge:
           type: string
           format: uuid
-          readOnly: true
         name_badge:
           type: string
         badge_type:
@@ -813,7 +791,6 @@ components:
           nullable: true
         obtaining_alone_badge:
           type: integer
-          description: Nombre de produits sauvés requis
 
     UserBadge:
       type: object
@@ -826,10 +803,8 @@ components:
       properties:
         total_saved:
           type: integer
-          description: Total de produits sauvés depuis le début
         saved_last_90_days:
           type: integer
-          description: Produits sauvés sur les 90 derniers jours
 
     ProductInput:
       type: object
@@ -841,9 +816,8 @@ components:
           type: string
         price_product:
           type: number
-          format: decimal
           minimum: 0
-          description: 0 pour un produit gratuit, max 50000 Ar
+          description: 0 pour gratuit, max 50000 Ar
         initial_stock:
           type: integer
           minimum: 1
@@ -867,14 +841,10 @@ components:
           nullable: true
         latitude:
           type: number
-          format: float
           nullable: true
-          description: Coordonnée GPS latitude
         longitude:
           type: number
-          format: float
           nullable: true
-          description: Coordonnée GPS longitude
 
     Product:
       allOf:
@@ -907,6 +877,29 @@ components:
         user_username:
           type: string
           readOnly: true
+
+    Reservateur:
+      type: object
+      description: Infos de contact de l'utilisateur qui a réservé
+      properties:
+        id_user:
+          type: string
+          format: uuid
+        username:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        tel1_user:
+          type: string
+        tel2_user:
+          type: string
+        address_user:
+          type: string
 
     ReservationInput:
       type: object
@@ -942,6 +935,19 @@ components:
           type: string
           format: uuid
           readOnly: true
+        reservateur:
+          $ref: "#/components/schemas/Reservateur"
+          readOnly: true
+
+    ProductWithReservations:
+      allOf:
+        - $ref: "#/components/schemas/Product"
+      properties:
+        reservations:
+          type: array
+          readOnly: true
+          items:
+            $ref: "#/components/schemas/Reservation"
 
     ReviewInput:
       type: object

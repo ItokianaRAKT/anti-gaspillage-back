@@ -7,15 +7,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Product
 from .serializers import ProductSerializer, CreateProductSerializer
 from .filters import ProductFilter
-from users.models import User
+
+from reservations.models import Reservation
+from reservations.serializers import ReservationSerializer
+
 
 class ProductListView(generics.ListAPIView):
-    """
-    GET /api/products/
-    Liste tous les produits disponibles et non expirés.
-    Tri : gratuits en premier, puis par date de publication décroissante.
-    Filtres : search, category, dlc_24h, is_free, lat+lng+distance_km
-    """
     serializer_class = ProductSerializer
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend]
@@ -26,17 +23,11 @@ class ProductListView(generics.ListAPIView):
         queryset = queryset.filter(
             id_product__in=[p.id_product for p in queryset if p.is_visible()]
         )
-        # Priorité : gratuits en premier, puis plus récents
         return queryset.order_by('price_product', '-publication_date')
 
 
 class ProductCreateView(APIView):
-
-    """
-    POST /api/products/create/
-    Crée un produit. Requiert authentification.
-    """
-    permission_classes = []
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         from users.models import User
@@ -55,11 +46,6 @@ class ProductCreateView(APIView):
 
         
 class ProductDetailView(APIView):
-    """
-    GET    /api/products/<uuid>/ — public
-    PATCH  /api/products/<uuid>/ — propriétaire uniquement
-    DELETE /api/products/<uuid>/ — propriétaire uniquement
-    """
     def get_permissions(self):
         if self.request.method == 'GET':
             return [AllowAny()]
@@ -91,7 +77,6 @@ class ProductDetailView(APIView):
 
 
 class ProductRelistView(APIView):
-    """POST /api/products/<uuid>/relist/ — Remettre en vente."""
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
@@ -101,3 +86,25 @@ class ProductRelistView(APIView):
         product.is_available = True
         product.save()
         return Response(ProductSerializer(product).data)
+
+
+class MyProductsView(generics.ListAPIView):
+    """
+    GET /api/products/my/
+    Liste des produits publiés par l'utilisateur connecté,
+    avec les réservations associées.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        produits = Product.objects.filter(user=request.user).order_by('-publication_date')
+        result = []
+        for product in produits:
+            product_data = ProductSerializer(product).data
+            reservations = Reservation.objects.filter(
+                product=product,
+                status_reservation__in=['pending', 'confirmed', 'collected']
+            ).select_related('user')
+            product_data['reservations'] = ReservationSerializer(reservations, many=True).data
+            result.append(product_data)
+        return Response(result)
