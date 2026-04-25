@@ -16,9 +16,6 @@ class ReservationCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
 
-
-
-
     def post(self, request):
 
         serializer = ReservationSerializer(data=request.data)

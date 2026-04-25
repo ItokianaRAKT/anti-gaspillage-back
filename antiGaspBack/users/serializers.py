@@ -40,6 +40,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'tel1_user', 'tel2_user',
             'address_user', 'profile_pic_user',
             'saved_in_90_days', 'total_product_saved',
+            'date_joined',
         )
         read_only_fields = ('id_user', 'username', 'saved_in_90_days', 'total_product_saved')
 

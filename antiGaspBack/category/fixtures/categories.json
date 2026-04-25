@@ -22,7 +22,7 @@
   {
     "model": "category.category",
     "pk": "c0cd1bff-13ad-498d-8323-418dd79c860a",
-    "fields": { "name_category": "Poissons" }
+    "fields": { "name_category": "Fruits de mer" }
   },
   {
     "model": "category.category",

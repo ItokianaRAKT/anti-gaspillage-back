@@ -7,6 +7,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Product
 from .serializers import ProductSerializer, CreateProductSerializer
 from .filters import ProductFilter
+from django.utils import timezone
 
 from reservations.models import Reservation
 from reservations.serializers import ReservationSerializer
@@ -30,14 +31,10 @@ class ProductCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        from users.models import User
-        from users.models import User          
-        user = User.objects.first()            
-        request.user = user                   
         serializer = CreateProductSerializer(
             data=request.data,
             context={'request': request}
-    )
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -88,16 +85,14 @@ class ProductRelistView(APIView):
         return Response(ProductSerializer(product).data)
 
 
-class MyProductsView(generics.ListAPIView):
-    """
-    GET /api/products/my/
-    Liste des produits publiés par l'utilisateur connecté,
-    avec les réservations associées.
-    """
+class MyProductsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        produits = Product.objects.filter(user=request.user).order_by('-publication_date')
+        produits = Product.objects.filter(
+        user=request.user,
+        expiration_date__gte=timezone.localdate()  # ← seulement les non expirés
+    ).order_by('-publication_date')
         result = []
         for product in produits:
             product_data = ProductSerializer(product).data

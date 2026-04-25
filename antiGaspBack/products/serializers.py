@@ -1,5 +1,9 @@
 from rest_framework import serializers
 from .models import Product, PriceHistory
+from geopy.exc import GeocoderTimedOut
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut
+from geopy.point import Point
 
 PRICE_CAPS = {
     'pains et patisseries': 5000,
@@ -77,4 +81,27 @@ class CreateProductSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context['request'].user
         validated_data['current_stock'] = validated_data['initial_stock']
+        
+        try:
+            geolocator = Nominatim(user_agent="antigasp")
+            adresse_complete = validated_data.get('recovery_address', '')
+            parties = [p.strip() for p in adresse_complete.split(',')]
+            quartier = parties[-2] if len(parties) >= 2 else adresse_complete
+            
+            print(f"Géocodage de : {quartier}")
+            location = geolocator.geocode(
+                quartier,
+                viewbox=[(47.4, -18.7), (47.7, -19.0)],
+                bounded=True,
+                timeout=10
+            )
+            print(f"Résultat : {location}")
+            if location:
+                validated_data['latitude'] = location.latitude
+                validated_data['longitude'] = location.longitude
+        except GeocoderTimedOut:
+            print("Timeout géocodage")
+        except Exception as e:
+            print(f"Erreur géocodage : {e}")
+        
         return Product.objects.create(user=user, **validated_data)
