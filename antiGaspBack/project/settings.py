@@ -93,8 +93,9 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
+    "https://anti-gaspillage.vercel.app",
     "http://localhost:5173",
-    "https://ton-front.vercel.app"
+    "http://127.0.0.1:5173",
 ]
 
 REST_FRAMEWORK = {
