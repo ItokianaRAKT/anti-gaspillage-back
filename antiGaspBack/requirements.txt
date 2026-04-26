@@ -9,5 +9,6 @@ psycopg2-binary==2.9.11
 PyJWT==2.12.1
 python-dotenv==1.2.2
 sqlparse==0.5.5
-gunicorn
+gunicorn==21.2.0
 dj-database-url
+geopy==2.4.1
